@@ -24,7 +24,6 @@ QString generateRandomId(int length = 12)
 {
     const QString chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz"
         "0123456789";
 
     QString result;
@@ -91,44 +90,83 @@ int main(int argc, char *argv[])
                      });
 
     httpServer.route("/api/get_location", QHttpServerRequest::Method::Get,
-                 [](const QHttpServerRequest &req) {
+                     [](const QHttpServerRequest &req) {
 
-                     const auto query = req.query();
-                     const QString devId = query.queryItemValue("dev_id");
-
-                     if (devId.isEmpty()) {
-                         return QHttpServerResponse(
-                             QJsonObject{
-                                 {"status","error"},
-                                 {"message","dev_id missing"}
-                             },
-                             QHttpServerResponse::StatusCode::BadRequest
-                             );
-                     }
-
-                     if (!g_locations.contains(devId)) {
-                         return QHttpServerResponse(
-                             QJsonObject{
-                                 {"status","error"},
-                                 {"message","device not found"}
-                             },
-                             QHttpServerResponse::StatusCode::NotFound
-                             );
-                     }
-
-                     const LocationData &loc = g_locations[devId];
-
-                     return QHttpServerResponse(
-                         QJsonObject{
-                             {"status","ok"},
-                             {"dev_id", devId},
-                             {"utc", loc.utc},
-                             {"lat", loc.lat},
-                             {"lon", loc.lon},
-                             {"alt", loc.alt}
+                         QJsonDocument doc = QJsonDocument::fromJson(req.body());
+                         if (!doc.isObject()) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status", "error"},
+                                     {"message", "Invalid JSON"}
+                                 },
+                                 QHttpServerResponse::StatusCode::BadRequest
+                                 );
                          }
-                         );
-                 });
+
+                         QJsonObject obj = doc.object();
+                         if (!obj.contains("dev_id") ) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status", "error"},
+                                     {"message", "Missing fields"}
+                                 },
+                                 QHttpServerResponse::StatusCode::BadRequest
+                                 );
+                         }
+
+                         const QString devId = obj["dev_id"].toString();
+
+                         if (devId.isEmpty()) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status","error"},
+                                     {"message","dev_id missing"}
+                                 },
+                                 QHttpServerResponse::StatusCode::BadRequest
+                                 );
+                         }
+
+                         if (!g_locations.contains(devId)) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status","error"},
+                                     {"message","device not found"}
+                                 },
+                                 QHttpServerResponse::StatusCode::NotFound
+                                 );
+                         }
+
+                         const LocationData &loc = g_locations[devId];
+                         qDebug()<<"Send Data of "<<devId;
+                         return QHttpServerResponse(
+                             QJsonObject{
+                                 {"status","ok"},
+                                 {"dev_id", devId},
+                                 {"utc", loc.utc},
+                                 {"lat", loc.lat},
+                                 {"lon", loc.lon},
+                                 {"alt", loc.alt}
+                             }
+                             );
+                     });
+
+    httpServer.route("/api/get_newid", QHttpServerRequest::Method::Get,
+                     [](const QHttpServerRequest &) {
+
+                         QString devId;
+
+                         // Ensure uniqueness (very unlikely loop, but safe)
+                         do {
+                             devId = "ARISE1600_"+generateRandomId(12);
+                         } while (g_locations.contains(devId));
+
+                         return QHttpServerResponse(
+                             QJsonObject{
+                                 {"status", "ok"},
+                                 {"NewDev_id", devId}
+                             }
+                             );
+                     });
 
 
     const quint16 port = 8080;
