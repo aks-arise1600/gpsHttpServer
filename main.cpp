@@ -92,11 +92,11 @@ int main(int argc, char *argv[])
                          g_device_info[obj["dev_id"].toString()] = dev;
 
                          qDebug() << "Device:"
-                                  << obj["board"].toDouble()
-                                  << obj["product"].toDouble()
-                                  << obj["manufacturer"].toString()
-                                  << obj["model"].toString()
-                                  << obj["android_id"].toString();
+                                  << dev.board
+                                  << dev.product
+                                  << dev.manufacturer
+                                  << dev.model
+                                  << dev.android_id;
 
                          return QHttpServerResponse(
                              QJsonObject{{"status", "ok"}}
@@ -138,9 +138,10 @@ int main(int argc, char *argv[])
                          g_locations[obj["dev_id"].toString()] = loc;
 
                          qDebug() << "Location:"
-                                  << obj["lat"].toDouble()
-                                  << obj["lon"].toDouble()
-                                  << obj["utc"].toString()
+                                  << loc.lat
+                                  << loc.lon
+                                  << loc.alt
+                                  << loc.utc
                                   << obj["dev_id"].toString();
 
                          return QHttpServerResponse(
