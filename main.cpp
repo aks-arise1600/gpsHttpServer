@@ -222,14 +222,30 @@ int main(int argc, char *argv[])
     QHttpServer httpServer;
     QTcpServer tcpServer;
 
-    httpServer.route("/api/send_devinfo", QHttpServerRequest::Method::Post,&m_deviceinfo);
+    httpServer.route("/api/send_devinfo",
+                     QHttpServerRequest::Method::Post,
+                     [](const QHttpServerRequest &req) {
+                         return m_deviceinfo(req);
+                     });
 
     // REST endpoint
-    httpServer.route("/api/send_location", QHttpServerRequest::Method::Post,&m_locationInfo);
+    httpServer.route("/api/send_location",
+                     QHttpServerRequest::Method::Post,
+                     [](const QHttpServerRequest &req) {
+                         return m_locationInfo(req);
+                     });
 
-    httpServer.route("/api/get_location", QHttpServerRequest::Method::Get,&m_getLoaction);
+    httpServer.route("/api/get_location",
+                     QHttpServerRequest::Method::Get,
+                     [](const QHttpServerRequest &req) {
+                         return m_getLoaction(req);
+                     });
 
-    httpServer.route("/api/get_newid", QHttpServerRequest::Method::Get,&m_getNewId);
+    httpServer.route("/api/get_newid",
+                     QHttpServerRequest::Method::Get,
+                     [](const QHttpServerRequest &req) {
+                         return m_getNewId(req);
+                     });
 
 
     const quint16 port = 8080;
