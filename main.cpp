@@ -17,7 +17,18 @@ struct LocationData
     double alt = 0;
 };
 
+struct DeviceInfoData
+{
+    QString board;
+    QString product;
+    QString manufacturer;
+    QString model;
+    QString android_id;
+    QString dev_id;
+};
+
 static QHash<QString, LocationData> g_locations;
+static QHash<QString, DeviceInfoData> g_device_info;
 
 
 QString generateRandomId(int length = 12)
@@ -43,6 +54,54 @@ int main(int argc, char *argv[])
 
     QHttpServer httpServer;
     QTcpServer tcpServer;
+
+    httpServer.route("/api/send_devinfo", QHttpServerRequest::Method::Post,
+                     [](const QHttpServerRequest &req) {
+
+                         QJsonDocument doc = QJsonDocument::fromJson(req.body());
+                         if (!doc.isObject()) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status", "error"},
+                                     {"message", "Invalid JSON"}
+                                 },
+                                 QHttpServerResponse::StatusCode::BadRequest
+                                 );
+                         }
+
+                         QJsonObject obj = doc.object();
+                         if (!obj.contains("android_id") || !obj.contains("dev_id")) {
+                             return QHttpServerResponse(
+                                 QJsonObject{
+                                     {"status", "error"},
+                                     {"message", "Missing fields"}
+                                 },
+                                 QHttpServerResponse::StatusCode::BadRequest
+                                 );
+                         }
+
+                         DeviceInfoData dev;
+                         dev.board = obj["board"].toString();
+                         dev.product = obj["product"].toString();
+                         dev.manufacturer = obj["manufacturer"].toString();
+                         dev.model = obj["model"].toString();
+                         dev.android_id = obj["android_id"].toString();
+                         dev.dev_id = obj["dev_id"].toString();
+
+
+                         g_device_info[obj["dev_id"].toString()] = dev;
+
+                         qDebug() << "Device:"
+                                  << obj["board"].toDouble()
+                                  << obj["product"].toDouble()
+                                  << obj["manufacturer"].toString()
+                                  << obj["model"].toString()
+                                  << obj["android_id"].toString();
+
+                         return QHttpServerResponse(
+                             QJsonObject{{"status", "ok"}}
+                             );
+                     });
 
     // REST endpoint
     httpServer.route("/api/send_location", QHttpServerRequest::Method::Post,
